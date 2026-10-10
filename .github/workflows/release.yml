@@ -1,0 +1,38 @@
+name: Release
+
+# Publishes to npm when a tag v<version> is pushed. No npm token exists anywhere: the registry
+# trusts this workflow in this repository (npm trusted publishing, OpenID Connect).
+#
+# One-time set-up on npmjs.com: package "calmonkey" → Settings → Trusted Publisher → GitHub
+# Actions: organization "calmonkey", repository "cli", workflow filename "release.yml". Then
+# set Publishing access to "Require two-factor authentication and disallow tokens".
+# Needs npm 11.5.1 or later, which Node 24 brings.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: The tag is the version in package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: node dist/cli.js --version
+      # Provenance is attached automatically for a public package from a public repository.
+      - run: npm publish

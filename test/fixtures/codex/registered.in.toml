@@ -1,0 +1,4 @@
+[mcp_servers.calmonkey]
+# added by hand
+url = 'https://mcp.calmonkey.com/mcp'
+startup_timeout_sec = 20

@@ -1,0 +1,13 @@
+# Project settings for Codex.
+model = "gpt-6"          # the team default
+approval_policy = "on-request"
+
+[mcp_servers.docs]
+command = "npx"
+args = ["-y", "mcp-remote", "https://docs.example.com/mcp"]
+
+[mcp_servers.docs.env]
+TOKEN = "from-the-keychain"
+
+[profiles.fast]
+model = "gpt-6-mini"

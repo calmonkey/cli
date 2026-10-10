@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # What the docs site renders /docs/cli from must be what the code says.
+      - run: node scripts/reference.mjs --check
+      # The built program behind a proxy (no CalMonkey needed).
+      - run: npx vitest run test/e2e/proxy.e2e.test.ts
+      - uses: actions/upload-artifact@v4
+        if: matrix.node == 24
+        with:
+          name: dist
+          path: dist/
+
+  # The oldest Node the package claims: the built file must start and write files there.
+  node-20:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20.12.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - run: node dist/cli.js --version
+      - run: node dist/cli.js --help
+      - name: Register the MCP server in a new project
+        run: |
+          mkdir /tmp/project && cd /tmp/project
+          node "$GITHUB_WORKSPACE/dist/cli.js" mcp add --yes --client claude-code --client cursor --client codex --client gemini --client windsurf
+          test -f .mcp.json && test -f .cursor/mcp.json && test -f .codex/config.toml && test -f .gemini/settings.json && test -f .devin/mcp_config.json

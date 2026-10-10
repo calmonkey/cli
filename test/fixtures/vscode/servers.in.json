@@ -1,0 +1,11 @@
+{
+    "inputs": [
+        { "type": "promptString", "id": "api-key", "description": "API key", "password": true }
+    ],
+    "servers": {
+        "playwright": {
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"]
+        }
+    }
+}

@@ -1,0 +1,170 @@
+{
+ "attendees_unsupported": [
+  {
+   "on": "attendees",
+   "means": "Guests were added on a calendar that sends no invitations (provider table). On an application calendar, send `notify_attendees: false` to store them without telling anybody."
+  }
+ ],
+ "conferencing_unavailable": [
+  {
+   "on": "conferencing.profile_id",
+   "means": "`integrated` on a calendar that adds no meeting link of its own."
+  }
+ ],
+ "invalid": [
+  {
+   "on": "recurrence.…, tzid",
+   "means": "The rule does not fit the event: the start is not an occurrence of it (`…by_day`), `by_day` is wrong for the frequency, a monthly series starts on the 29th to 31st or a yearly one on 29 February (`…frequency`), `until` is before the start, a timed series has no `tzid`, or an exception’s `date` is not a date or is named twice. The description says which."
+  },
+  {
+   "on": "any field",
+   "means": "The value is not acceptable (a time, a time zone, end before start…)."
+  }
+ ],
+ "invalid_callback_url": [
+  {
+   "on": "any field",
+   "means": "The callback URL is not an https URL."
+  }
+ ],
+ "invalid_callback_url_blocked": [
+  {
+   "on": "any field",
+   "means": "CalMonkey will not call that host: local, private or example addresses, or a port other than 443."
+  }
+ ],
+ "invalid_email": [
+  {
+   "on": "attendees.…email",
+   "means": "Not an email address."
+  }
+ ],
+ "invalid_format": [
+  {
+   "on": "attendees",
+   "means": "`attendees` is not an object with `invite` and / or `remove`. Also on `recurrence` that is not an object or null, and on a `by_day` entry that is not an object."
+  },
+  {
+   "on": "any field",
+   "means": "Wrong format."
+  }
+ ],
+ "invalid_json": [
+  {
+   "on": "any field",
+   "means": "The body is not a JSON object (`base`)."
+  }
+ ],
+ "invalid_type": [
+  {
+   "on": "any field",
+   "means": "Wrong type, such as a number where a string belongs."
+  }
+ ],
+ "invalid_value": [
+  {
+   "on": "conferencing.profile_id",
+   "means": "Not `default`, `integrated` or `none`."
+  },
+  {
+   "on": "any field",
+   "means": "Not one of the allowed values (e.g. `transparency`)."
+  }
+ ],
+ "max_recurrence_rules_exceeded": [
+  {
+   "on": "recurrence.rules",
+   "means": "More than one rule."
+  }
+ ],
+ "must_be_date": [
+  {
+   "on": "…until",
+   "means": "Not a date (`YYYY-MM-DD`)."
+  }
+ ],
+ "must_be_integer_greater_than_zero": [
+  {
+   "on": "…interval, …count",
+   "means": "Not a whole number above zero."
+  }
+ ],
+ "not_an_occurrence": [
+  {
+   "on": "occurrence_date",
+   "means": "The series has no occurrence on that day."
+  }
+ ],
+ "not_recognized": [
+  {
+   "on": "…frequency",
+   "means": "Not `daily`, `weekly`, `monthly` or `yearly`."
+  }
+ ],
+ "not_recurring": [
+  {
+   "on": "occurrence_date",
+   "means": "The event does not repeat."
+  }
+ ],
+ "not_supported": [
+  {
+   "on": "recurrence.…",
+   "means": "A field a rule does not have (`by_month_day`, `by_month`, `by_set_pos`, `week_start`…), a field of a `by_day` entry other than `day` and `nth_of_period`, or a list under `exceptions` other than `add` and `change`. Nothing in a rule is ever dropped silently."
+  }
+ ],
+ "not_supported_count_until_combination": [
+  {
+   "on": "…until",
+   "means": "`count` and `until` together."
+  }
+ ],
+ "notify_attendees_unsupported": [
+  {
+   "on": "notify_attendees",
+   "means": "`notify_attendees: false` on an event with guests in a calendar that always tells them (Microsoft)."
+  }
+ ],
+ "required": [
+  {
+   "on": "any",
+   "means": "A guest without `email`; `conferencing` without `profile_id`; a changed occurrence with only one of `start` and `end`."
+  },
+  {
+   "on": "any field",
+   "means": "The field is missing."
+  }
+ ],
+ "too_big": [
+  {
+   "on": "any",
+   "means": "Over a limit: more than 100 entries in `invite` or `remove`, an address over 254 or a name over 256 characters, `interval` over 99, `count` over 730, more than 64 entries in `exceptions.add` or `exceptions.change`."
+  },
+  {
+   "on": "any field",
+   "means": "Too short or too long, or too many items."
+  }
+ ],
+ "too_many_attendees": [
+  {
+   "on": "attendees",
+   "means": "The event would have more than 100 guests."
+  }
+ ],
+ "too_many_channels": [
+  {
+   "on": "any field",
+   "means": "The account already has 100 open channels."
+  }
+ ],
+ "too_small": [
+  {
+   "on": "recurrence.rules",
+   "means": "No rule. (To stop a series send `\"recurrence\": null`.)"
+  },
+  {
+   "on": "any field",
+   "means": "Too short or too long, or too many items."
+  }
+ ]
+}

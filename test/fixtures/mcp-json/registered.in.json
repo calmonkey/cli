@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "calmonkey": {
+      "type": "http",
+      "url": "https://mcp.calmonkey.com/mcp",
+      "headers": { "X-Team": "platform" }
+    }
+  }
+}

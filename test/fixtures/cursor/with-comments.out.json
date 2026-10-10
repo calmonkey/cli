@@ -1,0 +1,11 @@
+{
+  // Servers the whole team uses.
+  "mcpServers": {
+    "linear": {
+      "url": "https://mcp.linear.app/mcp" // sign in with your work account
+    },
+    "calmonkey": {
+      "url": "https://mcp.calmonkey.com/mcp"
+    },
+  }
+}

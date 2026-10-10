@@ -1,0 +1,7 @@
+{
+  "theme": "GitHub",
+  "context": { "fileName": ["AGENTS.md", "GEMINI.md"] },
+  "mcpServers": {
+    "docs": { "url": "https://docs.example.com/sse" }
+  }
+}

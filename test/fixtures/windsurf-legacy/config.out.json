@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "figma": { "serverUrl": "https://mcp.figma.com/mcp" },
+    "calmonkey": {
+      "serverUrl": "https://mcp.calmonkey.com/mcp"
+    }
+  }
+}
