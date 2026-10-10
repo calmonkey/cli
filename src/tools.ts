@@ -2,7 +2,7 @@ import { codexNetworkOff } from "./agent.js";
 import type { Context } from "./context.js";
 import { EXIT, Failure, type FailureInit } from "./fail.js";
 import { NetworkError, request } from "./http.js";
-import { ConfigNotWritableError, NotSignedInError, accessToken } from "./oauth.js";
+import { BadMachineTokenError, ConfigNotWritableError, MACHINE_TOKEN_REFUSED, NotSignedInError, accessToken, usesMachineToken } from "./oauth.js";
 import { printable } from "./quote.js";
 
 // Data commands reach CalMonkey through one route: POST <mcp>/cli/tools/<tool>, which runs the
@@ -42,8 +42,10 @@ export type CallOptions = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const notSignedIn = (ctx: Pick<Context, "endpoints" | "agent" | "interactive">, write = false): Failure =>
-  new Failure({
+export const notSignedIn = (ctx: Pick<Context, "endpoints" | "agent" | "interactive" | "env">, write = false): Failure =>
+  usesMachineToken(ctx)
+    ? new Failure({ code: "token_refused", message: MACHINE_TOKEN_REFUSED, exit: EXIT.signIn, write, fix: ["ask a person to make a new one: dashboard, AI clients (or calmonkey token create in their own terminal)", "and put it in this environment as CALMONKEY_TOKEN"] })
+    : new Failure({
     code: "not_signed_in",
     message: `no sign-in on this machine for ${new URL(ctx.endpoints.app).host}`,
     exit: EXIT.signIn,
@@ -91,6 +93,11 @@ function refusal(status: number, e: ErrorBody, opts: CallOptions, requestId: str
       return new Failure({ ...base, exit, fix: ["calmonkey events list --ours", "(only events this application wrote can be changed or deleted)"] });
     case "confirmation_invalid":
       return new Failure({ ...base, exit: EXIT.failed, message: "that --confirm token does not fit this command: it works once, for 10 minutes, for exactly the command that was described", fix: [printable(dropConfirm(opts.argv)), "(run it without --confirm to get a new description)"] });
+    case "needs_person":
+      return new Failure({ ...base, exit, fix: ["ask a person to run this command in their own terminal, signed in with calmonkey login", "(a machine token cannot agree to a delete or an email to guests)"] });
+    case "token_read_only":
+    case "token_limited":
+      return new Failure({ ...base, exit, fix: ["ask a person for a token that covers this (dashboard: AI clients)"] });
     case "rate_limited":
       return new Failure({ ...base, exit, fix: ["wait a few seconds and run the same command again"] });
     case "invalid_event":
@@ -121,6 +128,7 @@ export async function callTool<T = Record<string, unknown>>(ctx: Context, tool: 
       return await accessToken(ctx, { forceRefresh: force });
     } catch (error) {
       if (error instanceof NotSignedInError) throw notSignedIn(ctx, opts.write);
+      if (error instanceof BadMachineTokenError) throw new Failure({ code: "bad_token", message: "CALMONKEY_TOKEN is set, but to something that is not a CalMonkey machine token (they start with cmmmt_)", exit: EXIT.signIn, write: opts.write, fix: ["ask the person who made it for the token again, or unset CALMONKEY_TOKEN to use the stored sign-in"] });
       if (error instanceof ConfigNotWritableError) throw new Failure({ code: "config_not_writable", message: error.message.split("\n")[0]!.replace(/^error config_not_writable: /, ""), exit: EXIT.signIn, write: opts.write, fix: error.message.split("\n").slice(2).map((l) => l.replace(/^fix: /, "").trim()) });
       if (error instanceof NetworkError) throw networkFailure(ctx, error, opts);
       throw error;

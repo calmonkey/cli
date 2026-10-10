@@ -268,6 +268,9 @@ const REFRESH_MARGIN_MS = 60_000;
  * presenting a refresh token that was already replaced (which would end the connection).
  */
 export async function accessToken(ctx: Context, opts: { forceRefresh?: boolean } = {}): Promise<string> {
+  // An agent with no browser: a token a person made for it, used instead of any stored sign-in.
+  const machine = machineToken(ctx);
+  if (machine) return machine;
   const session = loadSession(ctx);
   if (!session) throw new NotSignedInError();
   if (!opts.forceRefresh && session.expires_at - Date.now() > REFRESH_MARGIN_MS) return session.access_token;
@@ -292,3 +295,33 @@ export async function accessToken(ctx: Context, opts: { forceRefresh?: boolean }
     throw error;
   }
 }
+
+// --- CALMONKEY_TOKEN ---------------------------------------------------------------------------
+//
+// A token a person made in the dashboard (AI clients) or with `calmonkey token create`, for an
+// AI agent or a CI job that cannot sign in: no browser, nobody to press Connect. Read from the
+// environment only, never from a flag or a file; never printed, never written anywhere by this
+// tool. CalMonkey decides what it may do (test-mode applications only, and what was ticked).
+
+const MACHINE_TOKEN = /^cmmmt_[A-Za-z0-9_-]{32,200}$/;
+
+/** Thrown when CALMONKEY_TOKEN is set to something that is not a machine token. Exit code 3. */
+export class BadMachineTokenError extends CliError {
+  constructor() {
+    super("error bad_token: CALMONKEY_TOKEN is set, but to something that is not a CalMonkey machine token (they start with cmmmt_)\nnothing was sent\nfix: ask the person who made it for the token again, or unset CALMONKEY_TOKEN to use the stored sign-in", 3);
+    this.name = "BadMachineTokenError";
+  }
+}
+
+/** The machine token from the environment, or null when there is none. */
+export function machineToken(ctx: Pick<Context, "env">): string | null {
+  const raw = ctx.env.CALMONKEY_TOKEN?.trim();
+  if (!raw) return null;
+  if (!MACHINE_TOKEN.test(raw)) throw new BadMachineTokenError();
+  return raw;
+}
+
+/** Is CALMONKEY_TOKEN set (whatever its value)? */
+export const usesMachineToken = (ctx: Pick<Context, "env">): boolean => !!ctx.env.CALMONKEY_TOKEN?.trim();
+
+export const MACHINE_TOKEN_REFUSED = "CALMONKEY_TOKEN was refused: it has expired, was revoked, or the person who made it left the organization";

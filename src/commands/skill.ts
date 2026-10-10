@@ -5,6 +5,7 @@ import { COMMON, flag, on, type Command } from "../command.js";
 import type { Context } from "../context.js";
 import { EXIT, Failure } from "../fail.js";
 import { agentsSection } from "../guide.js";
+import { declaredIn } from "../install.js";
 import { print } from "../out.js";
 import { API_SKILL, applyAgentsMd, applySkill, installedBy, planAgentsMd, planClaudeMd, planSkill, skillsSource, type SkillPlan } from "../skills.js";
 import { createUi, type Ui } from "../ui.js";
@@ -13,7 +14,7 @@ import { createUi, type Ui } from "../ui.js";
 // `calmonkey skill install` on its own.
 
 /** Shows what installing would write, asks, and writes. Returns true when anything was written. */
-export async function installSkills(ctx: Context, ui: Ui, opts: { dryRun: boolean; envFile: string }): Promise<boolean> {
+export async function installSkills(ctx: Context, ui: Ui, opts: { dryRun: boolean; envFile: string; /** Default: whether package.json lists calmonkey. */ local?: boolean }): Promise<boolean> {
   const source = skillsSource(ctx);
   const skills = [API_SKILL];
   // Claude Code reads its own folder; every other tool reads the shared one.
@@ -27,7 +28,7 @@ export async function installSkills(ctx: Context, ui: Ui, opts: { dryRun: boolea
     if (!fresh && !updated) ui.ok(`${plan.skill} is already in ${where}${kept ? ` (${kept} file${kept === 1 ? "" : "s"} you changed left as ${kept === 1 ? "it is" : "they are"})` : ""}.`);
     else ui.info(`${opts.dryRun ? "Would install" : "Install"} ${plan.skill} in ${where}: ${[fresh ? `${fresh} new` : "", updated ? `${updated} updated` : "", kept ? `${kept} of yours kept` : ""].filter(Boolean).join(", ")}.`);
   }
-  const section = agentsSection({ version: ctx.version, envFile: opts.envFile });
+  const section = agentsSection({ version: ctx.version, envFile: opts.envFile, local: opts.local ?? declaredIn(ctx.cwd) !== null });
   const agents = planAgentsMd(ctx.cwd, section);
   const claude = planClaudeMd(ctx.cwd, section);
   const between = "(between <!-- BEGIN:calmonkey --> and its END marker; the rest of the file is not touched)";

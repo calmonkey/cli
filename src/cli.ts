@@ -10,6 +10,7 @@ import { runListen } from "./commands/listen.js";
 import { LOG_COMMANDS } from "./commands/logs.js";
 import { describeSession, registerMcp } from "./commands/shared.js";
 import { SKILL_COMMANDS } from "./commands/skill.js";
+import { TOKEN_COMMANDS } from "./commands/token.js";
 import { getSession } from "./api.js";
 import { COMMON, commandHelp, flag, list, on, parseFlags, str, type Command } from "./command.js";
 import { CliError, createContext, type Context } from "./context.js";
@@ -50,7 +51,7 @@ const SETUP_COMMANDS: Command[] = [
   {
     name: "init",
     group: "start",
-    summary: "Set a project up: sign in through the browser, pick or create a test-mode application, write the env file (client id, secret, time zone), install the skill and the section in AGENTS.md. Shows what it will write first; never overwrites",
+    summary: "Set a project up: sign in through the browser, pick or create a test-mode application, write the env file (client id, secret, time zone), add calmonkey to package.json as a devDependency (when there is one), install the skill and the section in AGENTS.md. Shows what it will write first; never overwrites",
     flags: [
       flag.bool("yes", "ask nothing; take the safe answer to every question"),
       COMMON.dryRun,
@@ -60,6 +61,7 @@ const SETUP_COMMANDS: Command[] = [
       flag.bool("no-secret", "never fetch a client secret"),
       flag.bool("rotate-secret", "replace an existing application's secret without asking"),
       flag.bool("no-skills", "skip the skill and AGENTS.md"),
+      flag.bool("no-install", "do not add calmonkey to package.json as a devDependency"),
       flag.bool("mcp", "also register the MCP server in the AI tools found (for tools that cannot run commands)"),
       CLIENT,
       flag.bool("no-browser", "print the sign-in address instead of opening a browser"),
@@ -79,6 +81,7 @@ const SETUP_COMMANDS: Command[] = [
         rotateSecret: on(flags, "rotate-secret"),
         mcp: on(flags, "mcp"),
         skills: !on(flags, "no-skills"),
+        install: !on(flags, "no-install"),
         browser: !on(flags, "no-browser"),
         wait: on(flags, "wait"),
         tz: str(flags, "tz"),
@@ -149,7 +152,7 @@ const SETUP_COMMANDS: Command[] = [
   },
 ];
 
-export const COMMANDS: Command[] = [...SETUP_COMMANDS, ...ACCOUNT_COMMANDS, ...EVENT_COMMANDS, ...FREEBUSY_COMMANDS, ...LOG_COMMANDS, ...LEARN_COMMANDS, ...SKILL_COMMANDS, ...API_COMMANDS];
+export const COMMANDS: Command[] = [...SETUP_COMMANDS, ...ACCOUNT_COMMANDS, ...EVENT_COMMANDS, ...FREEBUSY_COMMANDS, ...LOG_COMMANDS, ...LEARN_COMMANDS, ...SKILL_COMMANDS, ...TOKEN_COMMANDS, ...API_COMMANDS];
 setRegistry(() => COMMANDS);
 
 /** Other spellings people and agents reach for, where taking them does no harm. */
@@ -211,7 +214,8 @@ Learn
   docs search <words> | docs get <page>
   schema <command>     the API call behind a command: fields, types, limits
   explain <code>       what an error code means, and the fix
-Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout
+Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout,
+  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser)
 
 Every command: --help (with examples), --json, --limit N; lists: --fields a,b; writes: --dry-run.
 Times need a zone: --tz Australia/Melbourne, or CALMONKEY_TZ in the env file.

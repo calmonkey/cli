@@ -1,6 +1,6 @@
 import { CliError, type Context } from "./context.js";
 import { request, type HttpOptions } from "./http.js";
-import { NotSignedInError, accessToken } from "./oauth.js";
+import { MACHINE_TOKEN_REFUSED, NotSignedInError, accessToken, usesMachineToken } from "./oauth.js";
 
 // The calls this tool makes to CalMonkey once signed in: its own endpoints beside the MCP
 // endpoint (`<mcp>/cli/…`), with the sign-in's access token.
@@ -13,7 +13,12 @@ export type Session = {
   access: { live_applications: "none" | "read" | "write"; event_details: boolean; test_client_secrets: boolean };
   access_token_expires_at: string;
   dashboard_url: string;
+  /** Present when the caller is a machine token (CALMONKEY_TOKEN). */
+  machine_token?: { name: string; expires_at: string; application_id: string | null; may_write: boolean };
 };
+
+export type MachineTokenRow = { connection_id: string; name: string; made_by: string; made_at: string; expires_at: string; last_used_at: string | null; application_id: string | null; event_details: boolean; may_write: boolean };
+export type MachineTokenMade = { token: string; connection_id: string; name: string; expires_at: string; application: { application_id: string; client_id: string; name: string } | null; event_details: boolean; may_write: boolean };
 
 export type Application = { application_id: string; client_id: string; name: string; mode: "test" | "live"; connected_accounts: number; created: string; dashboard_url: string };
 
@@ -42,7 +47,7 @@ async function call<T>(ctx: Context, path: string, opts: HttpOptions = {}): Prom
   let res = await send(await accessToken(ctx));
   // The token may have been ended a moment ago by another sign-in: one fresh token, one more try.
   if (res.status === 401) res = await send(await accessToken(ctx, { forceRefresh: true }));
-  if (res.status === 401) throw new NotSignedInError("The sign-in has run out or was disconnected. Run: calmonkey login");
+  if (res.status === 401) throw new NotSignedInError(usesMachineToken(ctx) ? `${MACHINE_TOKEN_REFUSED}. A person can make a new one in the dashboard (AI clients).` : "The sign-in has run out or was disconnected. Run: calmonkey login");
   if (res.status === 404 && !res.json) throw new CliError(`${new URL(ctx.endpoints.mcp).host} does not know this tool's addresses (${path} answered 404). Check CALMONKEY_MCP_URL.`);
   if (res.status >= 400) {
     const error = (res.json as { error?: { code?: string; message?: string } } | undefined)?.error;
@@ -57,3 +62,6 @@ export const createApplication = (ctx: Context, name: string) => call<Created>(c
 export const rotateSecret = (ctx: Context, applicationId: string) => call<Rotated>(ctx, `/applications/${encodeURIComponent(applicationId)}/secret`, { json: {} });
 export const listenRound = (ctx: Context, body: { application_id: string; reports?: Report[]; wait_seconds?: number; limit?: number }, signal?: AbortSignal) =>
   call<ListenRound>(ctx, "/listen", { json: body, timeoutMs: ((body.wait_seconds ?? 0) + 20) * 1000, signal });
+export const listMachineTokens = (ctx: Context) => call<{ tokens: MachineTokenRow[] }>(ctx, "/tokens");
+export const createMachineToken = (ctx: Context, body: { name: string; days?: number; application_id?: string; event_details?: boolean; may_write?: boolean }) => call<MachineTokenMade>(ctx, "/tokens", { json: body });
+export const revokeMachineToken = (ctx: Context, id: string) => call<{ revoked: boolean; connection_id: string }>(ctx, `/tokens/${encodeURIComponent(id)}`, { method: "DELETE" });

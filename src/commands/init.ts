@@ -5,13 +5,15 @@ import { chooseEnvFile, findInEnvFiles, parseEnv, planEnv, planIgnore, writeEnv,
 import { existsSync, readFileSync } from "node:fs";
 import { STARTER_PROMPT } from "../guide.js";
 import { isZone, machineZone } from "../time.js";
+import { addToProject, hasPackageJson } from "../install.js";
 import { installSkills } from "./skill.js";
 import type { Ui } from "../ui.js";
 import { describeSession, ensureSignedIn, projectName, registerMcp } from "./shared.js";
 
 // `npx calmonkey init`: the one command. In a project folder it signs the developer in, picks
 // or creates a test-mode application, writes the environment file (with the project's time
-// zone), installs the skill and the short section in AGENTS.md, and says what to ask the assistant.
+// zone), adds the tool to package.json as a devDependency when there is one (src/install.ts),
+// installs the skill and the short section in AGENTS.md, and says what to ask the assistant.
 //
 // Rules it keeps throughout:
 //   - It shows what it will write before writing, and `--dry-run` only shows.
@@ -43,6 +45,8 @@ export type InitOptions = {
   browser: boolean;
   /** --wait: wait for the person to approve in a browser even without a terminal. */
   wait?: boolean;
+  /** --no-install: do not add calmonkey to package.json. */
+  install?: boolean;
 };
 
 export { STARTER_PROMPT };
@@ -180,18 +184,26 @@ export async function runInit(ctx: Context, ui: Ui, opts: InitOptions): Promise<
     } else ui.info("Left as it is.");
   }
 
-  // 4. The MCP server.
+  // 4. The tool itself, in a project with a package.json.
+  let step = 4;
+  let local: boolean | undefined;
+  if (hasPackageJson(ctx.cwd)) {
+    ui.heading(`${step++}. calmonkey in package.json`);
+    local = (await addToProject(ctx, ui, { install: opts.install !== false, dryRun: opts.dryRun })).local;
+  }
+
+  // The MCP server.
   let nextSteps: string[] = [];
   if (opts.mcp) {
-    ui.heading("4. MCP server in your AI tools");
+    ui.heading(`${step++}. MCP server in your AI tools`);
     const outcome = await registerMcp(ctx, ui, { clients: opts.clients, dryRun: opts.dryRun });
     nextSteps = outcome.clients.map((c) => c.next);
   }
 
   // The skill and the always-loaded section.
   if (opts.skills) {
-    ui.heading(`${opts.mcp ? "5" : "4"}. Skill and AGENTS.md`);
-    await installSkills(ctx, ui, { dryRun: opts.dryRun, envFile: envRel });
+    ui.heading(`${step}. Skill and AGENTS.md`);
+    await installSkills(ctx, ui, { dryRun: opts.dryRun, envFile: envRel, ...(local !== undefined ? { local } : {}) });
   }
 
   // 6. What to say.

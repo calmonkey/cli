@@ -40,12 +40,14 @@ const statusCommand: Command = {
     const accounts = app ? (await call<Accounts>(input, "list_accounts", { application_id: app.client_id })).result : null;
     const tz = projectSetting(ctx, "CALMONKEY_TZ");
     const may = [session.access.live_applications === "none" ? "test-mode applications only" : `live applications: ${session.access.live_applications === "write" ? "read and change" : "read"}`, session.access.event_details ? "event text shown" : "free/busy only (no event text)", session.role === "member" ? "read only (member)" : "may write"];
-    const json = { organization: session.organization, role: session.role, access: session.access, application: app ? { client_id: app.client_id, name: app.name, mode: app.mode, from: configured?.from } : undefined, accounts: accounts ? { connected: accounts.connected_accounts, application_calendars: accounts.application_calendars } : undefined, tz: tz?.value, applications: apps.applications.length, live_applications_not_included: apps.live_applications_not_included };
+    const json = { organization: session.organization, role: session.role, access: session.access, ...(session.machine_token ? { machine_token: session.machine_token } : {}), application: app ? { client_id: app.client_id, name: app.name, mode: app.mode, from: configured?.from } : undefined, accounts: accounts ? { connected: accounts.connected_accounts, application_calendars: accounts.application_calendars } : undefined, tz: tz?.value, applications: apps.applications.length, live_applications_not_included: apps.live_applications_not_included };
     emit(
       input,
       () =>
         [
-          `signed in: ${JSON.stringify(session.organization)} as ${session.role} | ${may.join(", ")}`,
+          session.machine_token
+            ? `signed in with a machine token (CALMONKEY_TOKEN) ${JSON.stringify(session.machine_token.name)}, expires ${session.machine_token.expires_at.slice(0, 10)}: ${JSON.stringify(session.organization)} as ${session.role} | ${may.join(", ")}${session.machine_token.application_id ? ", one application only" : ""}`
+            : `signed in: ${JSON.stringify(session.organization)} as ${session.role} | ${may.join(", ")}`,
           app
             ? `application: ${JSON.stringify(app.name)} (${app.mode}), client id ${app.client_id}${configured ? `, from ${configured.from}` : ", the only one"}`
             : configured

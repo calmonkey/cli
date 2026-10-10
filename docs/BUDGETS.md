@@ -4,7 +4,7 @@ Written by `test/budgets.test.ts` on every run: tiktoken `o200k_base`, on the fi
 
 | Output | Budget (tokens) | Measured |
 |---|---|---|
-| Root `--help` | 400 | 329 |
+| Root `--help` | 400 | 348 |
 | One command's `--help` (largest) | 400 | 400 (`events list`) |
 | `agent-guide` | 450 | 432 |
 | `schema <command>` (largest) | 600 | 412 (`upsertEvent`) |

@@ -35,6 +35,8 @@ export function sandbox(overrides: Partial<Context> & { url?: string } = {}): Sa
     stderr,
     interactive: false,
     version: "9.9.9-test",
+    // No test runs a real package manager by accident: one that wants to see the call supplies its own.
+    run: async () => ({ code: 0, output: "" }),
     ...(url ? { endpoints: { app: url, api: url, mcp: `${url}/mcp` } } : {}),
     ...rest,
   });

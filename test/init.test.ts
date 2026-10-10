@@ -215,7 +215,7 @@ describe("the AI tools and the skill", () => {
     s.write(".env.example", "CALENDAR_CLIENT_ID=\nCALENDAR_CLIENT_SECRET=\n");
     await run("init", "--yes", "--no-mcp");
     expect(readdirSync(path.join(s.cwd, ".agents/skills"))).toEqual(["calmonkey-api"]);
-    expect(readFileSync(path.join(s.cwd, "AGENTS.md"), "utf8")).toContain("use the `calmonkey` command");
+    expect(readFileSync(path.join(s.cwd, "AGENTS.md"), "utf8")).toContain("run `npx calmonkey …`: a devDependency here");
   });
 
   it("--no-mcp and --no-skills skip those steps", async () => {

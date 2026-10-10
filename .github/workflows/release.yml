@@ -26,6 +26,9 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
+      # Trusted publishing needs npm 11.5.1 or later (npm docs, "Trusted publishing for npm packages").
+      - name: npm can publish with OpenID Connect
+        run: node -e "const [a,b,c]=process.argv[1].split('.').map(Number); process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)" "$(npm --version)" || npm install -g npm@^11.5.1
       - name: The tag is the version in package.json
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: npm ci

@@ -1,6 +1,6 @@
 {
   "name": "calmonkey",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "The CalMonkey command line tool: the calendar API from the terminal, for developers and their AI coding agents.",
   "keywords": [
     "calmonkey",

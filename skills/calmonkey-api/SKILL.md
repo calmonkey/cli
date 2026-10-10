@@ -5,7 +5,7 @@ license: MIT
 compatibility: The command line tool needs Node 20.12 or later and network access to calmonkey.com. The sample scripts need curl or Node.
 metadata:
   author: CalMonkey
-  cli_version: "0.2.3"
+  cli_version: "0.2.4"
   documentation: https://calmonkey.com/docs
 ---
 

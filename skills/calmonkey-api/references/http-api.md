@@ -44,6 +44,7 @@ For AI tools that cannot run a command (Claude.ai, ChatGPT, hosted agents). Wher
 | `read_events` | Read the events of an account's calendars in a time window, with their details. | No |
 | `read_free_busy` | Read when an account's calendars are busy in a time window: one period per event with its start, end and busy / tentative / free status. | No |
 | `upsert_event` | Write an event to a calendar under your own event_id: creates it, or replaces the event this application wrote earlier under the same id (the whole event: a field left out is cleared, except the guest list, which stays as it is unless `attendees` is sent). | Yes |
+| `edit_event` | Change the named fields of an event this application wrote and leave every other field as it is (read, merge, write: nothing is cleared by leaving it out). | Yes |
 | `delete_event` | Delete an event this application wrote, by the event_id it was written with (or one occurrence of a repeating event with occurrence_date). | Yes |
 | `read_request_log` | Read an application's request log, newest first: every authenticated API request it made and every tool call an AI client made on it (marked as such, with the client's name), with status, duration and the redacted bodies. | No |
 | `read_webhook_deliveries` | Read the notifications CalMonkey sent (or is still trying to send) to an application's webhook channels, newest first: type, where it went, how many attempts, the receiver's last answer and when the next attempt is due. | No |

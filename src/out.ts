@@ -10,9 +10,10 @@ import { EXIT, Failure } from "./fail.js";
 /** The byte caps the tool enforces at run time (it has no tokenizer): about 2,000 and 6,000 tokens. */
 export const CAP = { standard: 8 * 1024, explicit: 24 * 1024 } as const;
 
-// Client secrets, access and refresh tokens, authorization codes, link tokens, channel secrets.
+// Client secrets, access and refresh tokens, authorization codes, link tokens, channel secrets,
+// machine tokens (CALMONKEY_TOKEN; `calmonkey token create` writes its one copy past this).
 // A confirmation token (cmmcf_) is not a secret: printing it is the point.
-const SECRET = /\b(?:cmsec|cmat|cmrt|cmac|cmlt|whsec|cmmat|cmmrt|cmmac|cmmar)_[A-Za-z0-9_-]{8,}/g;
+const SECRET = /\b(?:cmsec|cmat|cmrt|cmac|cmlt|whsec|cmmat|cmmrt|cmmac|cmmar|cmmmt)_[A-Za-z0-9_-]{8,}/g;
 const SECRET_KEYS = new Set(["client_secret", "access_token", "refresh_token", "secret", "signing_secret", "authorization", "code_verifier", "link_token"]);
 
 export const redact = (text: string): string => text.replace(SECRET, "[redacted]");

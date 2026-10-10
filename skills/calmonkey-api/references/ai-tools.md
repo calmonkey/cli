@@ -13,6 +13,7 @@ One command, `npx calmonkey init`, sets CalMonkey up in your project. Your AI co
 - [A first prompt](#ai-prompt)
 - [Webhooks on your own machine](#ai-listen)
 - [Check the setup](#ai-doctor)
+- [Agents with no browser: CALMONKEY_TOKEN](#ai-token)
 - [What you approve](#ai-approve)
 - [Tools of the MCP server](#ai-tools)
 - [Changes that are confirmed first](#ai-confirm)
@@ -36,11 +37,13 @@ It does these things, in order:
 1. **Signs you in through the browser.** It opens `app.calmonkey.com`, where you sign in (or sign up) with Google or Microsoft, pick the organization and press **Connect**. The answer comes back to a port on `127.0.0.1` that the tool listens on for the length of the sign-in. No secret is put in a URL or on the command line. The tool then shows under [AI clients](https://app.calmonkey.com/dashboard/agents) in the dashboard as “CalMonkey CLI”, and can be disconnected there.
 2. **Picks or creates a test-mode application.** It lists the organization’s test-mode applications; you choose one or let it create one. It never touches a live application.
 3. **Writes your environment file.** `CALMONKEY_CLIENT_ID`, `CALMONKEY_API_URL`, `CALMONKEY_APP_URL`, `CALMONKEY_TZ` (the time zone dates are read in: your machine’s, shown before it is written, or the one you give with `--tz`) and, when you agree, `CALMONKEY_CLIENT_SECRET` go into `.env.local` (or `.env` when the project has one and no `.env.local`). A variable that is already set to something else is left alone and reported. The file is added to `.gitignore` when it is not ignored already.
-4. **Installs the CalMonkey skill and a short section in AGENTS.md** (see [Skills](#ai-skills)), which tell your AI coding agent to use the `calmonkey` command.
-5. **Prints what to say to your assistant**: the [first prompt](#ai-prompt) below.
+4. **Adds `calmonkey` to `package.json`** as a devDependency at its own version, when the project has a `package.json`, with the project’s package manager (npm, pnpm, Yarn or Bun, read from the lock file). It adds exactly that one package and changes nothing else; a project that already lists it keeps its version. Then `npx calmonkey` runs the project’s own copy, and package scripts can call `calmonkey`. Without a `package.json` this step does not happen.
+5. **Installs the CalMonkey skill and a short section in AGENTS.md** (see [Skills](#ai-skills)), which tell your AI coding agent to use the `calmonkey` command.
+6. **Prints what to say to your assistant**: the [first prompt](#ai-prompt) below.
 
 - **`--yes`**: Asks no questions and takes the safe answer to each. It does not replace an existing application’s client secret unless you add `--rotate-secret`.
 - **`--dry-run`**: Prints what would be written and changes nothing.
+- **`--no-install`**: Does not add `calmonkey` to `package.json`.
 - **`--tz`**: The time zone to write as `CALMONKEY_TZ`, for example `Australia/Melbourne`: the zone of the people whose calendars you work with.
 - **`--mcp`**: Also registers the [MCP server](#ai-connect) in the AI tools it finds (Claude Code, Cursor, VS Code, Codex, Gemini CLI and Windsurf), or in the ones named with `--client`. It shows exactly what it will write and asks first.
 
@@ -271,6 +274,24 @@ npx calmonkey doctor
 
 It reports, one line each: the Node version, which environment file has the client id and secret, whether CalMonkey accepts those credentials (with a request that changes nothing), who is signed in and to which organization, whether the MCP server answers and which AI tools have it registered, and whether the skill is installed. It exits with code 1 when something needs fixing.
 
+<a id="ai-token"></a>
+
+## Agents with no browser: CALMONKEY_TOKEN
+
+Signing in needs a person at a browser, so a cloud coding agent or a CI job cannot do it. Make it a token instead: in the dashboard under [AI clients](https://app.calmonkey.com/dashboard/agents) (“Token for an agent with no browser”), or with `calmonkey token create` in your own terminal while you are signed in. The token is shown once. Put it in the agent’s environment as `CALMONKEY_TOKEN`, in its secret settings rather than a file in the repository, and the `calmonkey` command line tool uses it instead of a sign-in.
+
+```sh
+calmonkey token create --name "Codex cloud" --days 7
+```
+
+- It reaches test-mode applications only, whatever else is ticked, and never returns a client secret. It cannot create applications.
+- It expires after 7, 30 or 90 days, and can be limited to one test-mode application.
+- It is free/busy only unless you tick event details, and reads only unless you tick “May change events”.
+- Nobody is behind it to say yes, so a call that is [confirmed first](#ai-confirm) (a delete, a change that emails guests) is refused: it needs a person who is signed in.
+- It acts as the person who made it, with their role at the time of each call, and stops working when they leave the organization. Owners and admins can make one.
+- It is listed under AI clients with who made it, what it may do, when it expires and when it was last used. **Disconnect** there (or `calmonkey token revoke`) ends it at once. Its calls are in the request log under its name, with the same limits as any other connection.
+- The command line tool takes it; the MCP server does not. It is stored as a hash only, like every token, and the tool never prints it or writes it to a file.
+
 <a id="ai-approve"></a>
 
 ## What you approve
@@ -301,6 +322,7 @@ Everyone in the organization sees its connected tools under [AI clients](https:/
 | `read_events` | Read the events of an account's calendars in a time window, with their details. | No |
 | `read_free_busy` | Read when an account's calendars are busy in a time window: one period per event with its start, end and busy / tentative / free status. | No |
 | `upsert_event` | Write an event to a calendar under your own event_id: creates it, or replaces the event this application wrote earlier under the same id (the whole event: a field left out is cleared, except the guest list, which stays as it is unless \`attendees\` is sent). | Yes, confirmed first where it matters |
+| `edit_event` | Change the named fields of an event this application wrote and leave every other field as it is (read, merge, write: nothing is cleared by leaving it out). | Yes, confirmed first where it matters |
 | `delete_event` | Delete an event this application wrote, by the event_id it was written with (or one occurrence of a repeating event with occurrence_date). | Yes, confirmed first where it matters |
 | `read_request_log` | Read an application's request log, newest first: every authenticated API request it made and every tool call an AI client made on it (marked as such, with the client's name), with status, duration and the redacted bodies. | No |
 | `read_webhook_deliveries` | Read the notifications CalMonkey sent (or is still trying to send) to an application's webhook channels, newest first: type, where it went, how many attempts, the receiver's last answer and when the next attempt is due. | No |
@@ -316,6 +338,8 @@ Three kinds of call are never carried out straight away:
 - writing an event in a way that makes the calendar email its guests (an event with `attendees`, unless `notify_attendees` is `false`), or deleting one that has guests.
 
 The first call changes nothing. It answers with what the call would do, in plain words. Where your tool can put a question to you (MCP elicitation), you are asked and your answer decides. Otherwise the answer has `status: "confirmation_required"` and a `confirmation_token`, and the call is carried out when it is sent again with `confirm: true` and that token. The token works once, for ten minutes, and only for exactly the arguments that were described.
+
+Some tools say they can ask but answer every question by themselves when no person is watching (an agent run without a terminal declines it). Then the call answers that it was declined and changed nothing. If you agree in the conversation, the agent sends the call again with `confirm: true` and no token: your tool is not asked again, the answer describes the call and carries a `confirmation_token`, and the call is carried out when it comes once more with that token.
 
 The command line tool goes by the same rule, decided by the same server code. It prints `NOT DONE: confirmation needed` with what would happen and the exact command to run once you have agreed, and exits with code 10. No flag skips it.
 

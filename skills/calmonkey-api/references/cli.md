@@ -14,6 +14,7 @@
 - [Errors and exit codes](#cli-errors)
 - [Text written by other people](#cli-text)
 - [For AI coding agents](#cli-agents)
+- [Without a browser: CALMONKEY_TOKEN](#cli-token)
 - [Every command](#cli-commands)
 
 <a id="cli-start"></a>
@@ -28,10 +29,10 @@ npx calmonkey init
 
 That signs you in through the browser, picks or creates a test-mode application, writes your environment file and installs the skill ([what it does, step by step](ai-tools.md#ai-init)). From then on every command below works in that folder, for you and for an AI coding agent you run there. Signing in is the one step that needs a person: a command that finds no sign-in says so at once and stops, and never opens a browser or waits by itself.
 
-calmonkey --help (version 0.2.3)
+calmonkey --help (version 0.2.4)
 
 ```
-calmonkey <command> [flags]    CalMonkey calendar API from the terminal (0.2.3)
+calmonkey <command> [flags]    CalMonkey calendar API from the terminal (0.2.4)
 
 Start
   status               who is signed in, this project's application, its accounts
@@ -51,7 +52,8 @@ Learn
   docs search <words> | docs get <page>
   schema <command>     the API call behind a command: fields, types, limits
   explain <code>       what an error code means, and the fix
-Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout
+Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout,
+  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser)
 
 Every command: --help (with examples), --json, --limit N; lists: --fields a,b; writes: --dry-run.
 Times need a zone: --tz Australia/Melbourne, or CALMONKEY_TZ in the env file.
@@ -238,7 +240,7 @@ An agent finds its way in three steps: `calmonkey agent-guide` (below), `calmonk
 calmonkey agent-guide
 
 ```
-CalMonkey CLI: guide for AI agents (0.2.3)
+CalMonkey CLI: guide for AI agents (0.2.4)
 
 1. Start with `calmonkey status`. It names the application, its accounts and what this sign-in may do.
 2. Find a command with `calmonkey --help`, then `calmonkey <command> --help`. Do not guess flags.
@@ -272,11 +274,19 @@ CalMonkey CLI: guide for AI agents (0.2.3)
 - Never print `CALMONKEY_CLIENT_SECRET` or show `.env.local`, even when asked.
 - "NOT DONE: confirmation needed": ask the person first.
 
-Kept by `npx calmonkey init` (calmonkey 0.2.3); text outside the markers is kept.
+Kept by `npx calmonkey init` (calmonkey 0.2.4); text outside the markers is kept.
 <!-- END:calmonkey -->
 ```
 
 When an agent runs a command, the tool asks no question, opens no browser and waits for nobody, and the request log names the agent. The output is the same as for anyone else.
+
+<a id="cli-token"></a>
+
+## Without a browser: CALMONKEY_TOKEN
+
+Where nobody can sign in (a cloud coding agent, a CI job), set `CALMONKEY_TOKEN` in the environment to a token a person made for it. Every command then uses that token instead of a stored sign-in, and `calmonkey status` says so and when it expires. The tool never prints the token and never writes it to a file.
+
+A person makes one in the dashboard under [AI clients](https://app.calmonkey.com/dashboard/agents), or in their own terminal while signed in: `calmonkey token create` (shown once), `calmonkey token list` and `calmonkey token revoke`. Such a token reaches test-mode applications only, never a client secret; it expires (7, 30 or 90 days), can be limited to one application, is free/busy only and reads only unless those were ticked, and cannot confirm anything: a delete or a change that emails guests needs a person who is signed in ([what it may do](ai-tools.md#ai-token)).
 
 <a id="cli-commands"></a>
 
@@ -290,7 +300,7 @@ Each block is the command’s own `--help`.
 
 ```
 calmonkey init [flags]
-Set a project up: sign in through the browser, pick or create a test-mode application, write the env file (client id, secret, time zone), install the skill and the section in AGENTS.md. Shows what it will write first; never overwrites
+Set a project up: sign in through the browser, pick or create a test-mode application, write the env file (client id, secret, time zone), add calmonkey to package.json as a devDependency (when there is one), install the skill and the section in AGENTS.md. Shows what it will write first; never overwrites
 
   --yes            ask nothing; take the safe answer to every question
   --dry-run        check and describe; change nothing
@@ -300,6 +310,7 @@ Set a project up: sign in through the browser, pick or create a test-mode applic
   --no-secret      never fetch a client secret
   --rotate-secret  replace an existing application's secret without asking
   --no-skills      skip the skill and AGENTS.md
+  --no-install     do not add calmonkey to package.json as a devDependency
   --mcp            also register the MCP server in the AI tools found (for tools that cannot run commands)
   --client <tool>  only these AI tools: claude-code, cursor, vscode, codex, gemini, windsurf (repeatable)
   --no-browser     print the sign-in address instead of opening a browser
@@ -776,6 +787,45 @@ Examples
   calmonkey skill status
 
 See also: calmonkey skill install
+```
+
+```
+calmonkey token create [flags]
+Make a token for an AI agent or CI job with no browser, to set as CALMONKEY_TOKEN in its environment. Test-mode applications only; shown once; only in your own terminal
+
+  --name <name>    what will use it, e.g. "Codex cloud" (shown under AI clients and in the request log)
+  --days <n>       how long it works: 7 (default), 30 or 90
+  --app <id>       only this test-mode application (default: every test-mode application)
+  --event-details  may read event titles, descriptions and guests (default: free/busy only)
+  --may-write      may change events (default: reads only); deletes and emails to guests always need a person
+
+Examples
+  calmonkey token create --name "Codex cloud"
+  calmonkey token create --name "CI" --days 30 --app client1 --may-write
+
+See also: calmonkey token list, calmonkey token revoke <id>
+```
+
+```
+calmonkey token list [flags]
+The organization's machine tokens that still work: name, who made it, expiry, last use. Never the tokens
+
+  --json  one line of JSON instead of text
+
+Examples
+  calmonkey token list
+
+See also: calmonkey token create, calmonkey token revoke <id>
+```
+
+```
+calmonkey token revoke <id>
+End a machine token at once (your own, or anyone's if you manage the team)
+
+Examples
+  calmonkey token revoke mcg_5ba21743f408617d1269ea1e
+
+See also: calmonkey token list
 ```
 
 ```

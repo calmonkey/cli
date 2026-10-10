@@ -22,6 +22,8 @@ export type Fake = {
   docs: string;
   /** Reports received by /mcp/cli/listen. */
   reports: unknown[];
+  /** Machine tokens made through /mcp/cli/tokens, with the token. */
+  madeTokens: { token: string; connection_id: string; name: string; made_by: string; made_at: string; expires_at: string; last_used_at: string | null; application_id: string | null; event_details: boolean; may_write: boolean }[];
   applications: { application_id: string; client_id: string; name: string; mode: "test" | "live"; connected_accounts: number; created: string; dashboard_url: string }[];
   state: {
     role: "owner" | "admin" | "member";
@@ -37,6 +39,8 @@ export type Fake = {
     /** Valid refresh tokens. */
     refreshTokens: Set<string>;
     accessTokens: Set<string>;
+    /** Machine tokens (CALMONKEY_TOKEN) it accepts on /mcp/cli/*, never on /mcp. */
+    machineTokens: Set<string>;
     revoked: string[];
     clientSecret: string;
     listenStatus?: number;
@@ -48,7 +52,7 @@ const json = (res: http.ServerResponse, status: number, body: unknown, headers: 
 
 export async function startFake(): Promise<Fake> {
   const codes = new Map<string, { challenge: string; redirectUri: string; clientId: string; resource: string; scope: string }>();
-  const fake = { toolCalls: [], docs: "", tool: () => ({ status: 404, body: { error: { code: "unknown_tool", message: "No such tool." } } }), requests: [] as Recorded[], listenQueue: [] as FakeNotification[][], reports: [] as unknown[], applications: [] as Fake["applications"], state: { role: "owner", secrets: true, refreshTokens: new Set<string>(), accessTokens: new Set<string>(), revoked: [] as string[], clientSecret: "cmsec_" + "s".repeat(40) } } as unknown as Fake;
+  const fake = { toolCalls: [], docs: "", tool: () => ({ status: 404, body: { error: { code: "unknown_tool", message: "No such tool." } } }), requests: [] as Recorded[], listenQueue: [] as FakeNotification[][], reports: [] as unknown[], applications: [] as Fake["applications"], madeTokens: [] as Fake["madeTokens"], state: { role: "owner", secrets: true, refreshTokens: new Set<string>(), accessTokens: new Set<string>(), machineTokens: new Set<string>(), revoked: [] as string[], clientSecret: "cmsec_" + "s".repeat(40) } } as unknown as Fake;
   const issue = () => {
     const access = `cmmat_${randomBytes(24).toString("base64url")}`;
     const refresh = `cmmrt_${randomBytes(24).toString("base64url")}`;
@@ -66,7 +70,7 @@ export async function startFake(): Promise<Fake> {
       fake.requests.push({ method: req.method ?? "", path: url.pathname, query: url.searchParams, headers: req.headers, body });
       const form = new URLSearchParams(body);
       const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1];
-      const authed = () => Boolean(bearer && fake.state.accessTokens.has(bearer));
+      const authed = () => Boolean(bearer && (fake.state.accessTokens.has(bearer) || (url.pathname.startsWith("/mcp/cli/") && fake.state.machineTokens.has(bearer))));
       const parsed = (): Record<string, unknown> => {
         try {
           return JSON.parse(body || "{}") as Record<string, unknown>;
@@ -139,7 +143,27 @@ export async function startFake(): Promise<Fake> {
       }
       if (url.pathname.startsWith("/mcp/cli/")) {
         if (!authed()) return json(res, 401, { error: { code: "unauthorized", message: "Not signed in, or the sign-in has run out. Run: calmonkey login" } });
-        if (url.pathname === "/mcp/cli/session") return json(res, 200, { organization: "Acme", role: fake.state.role, client: "CalMonkey CLI", connection_id: "mcg_1", access: { live_applications: "none", event_details: true, test_client_secrets: fake.state.secrets && fake.state.role !== "member" }, access_token_expires_at: new Date(Date.now() + 3600_000).toISOString(), dashboard_url: `${fake.url}/dashboard` });
+        const machine = bearer ? fake.state.machineTokens.has(bearer) : false;
+        if (url.pathname === "/mcp/cli/tokens" || url.pathname.startsWith("/mcp/cli/tokens/")) {
+          if (machine) return json(res, 403, { error: { code: "forbidden", message: "A machine token cannot see or make machine tokens." } });
+          if (req.method === "GET") return json(res, 200, { tokens: fake.madeTokens.map(({ token: _t, ...row }) => row) });
+          if (req.method === "DELETE") {
+            const id = decodeURIComponent(url.pathname.split("/").pop()!);
+            const found = fake.madeTokens.find((m) => m.connection_id === id);
+            if (!found) return json(res, 404, { error: { code: "not_found", message: "No machine token with that id in this organization." } });
+            fake.state.machineTokens.delete(found.token);
+            fake.madeTokens = fake.madeTokens.filter((m) => m !== found);
+            return json(res, 200, { revoked: true, connection_id: id });
+          }
+          const input = JSON.parse(body || "{}") as { name: string; days?: number; may_write?: boolean; event_details?: boolean };
+          const token = `cmmmt_${randomBytes(32).toString("base64url")}`;
+          fake.state.machineTokens.add(token);
+          const made = { token, connection_id: `mcg_${randomBytes(12).toString("hex")}`, name: input.name, made_by: "dev@acme.example", made_at: new Date().toISOString(), expires_at: new Date(Date.now() + (input.days ?? 7) * 86_400_000).toISOString(), last_used_at: null, application_id: null, event_details: !!input.event_details, may_write: !!input.may_write };
+          fake.madeTokens.push(made);
+          const { made_by: _m, made_at: _a, last_used_at: _l, application_id: _p, ...answer } = made;
+          return json(res, 201, { ...answer, application: null });
+        }
+        if (url.pathname === "/mcp/cli/session") return json(res, 200, { ...(machine ? { machine_token: { name: "CI", expires_at: "2026-11-01T00:00:00.000Z", application_id: null, may_write: false } } : {}), organization: "Acme", role: fake.state.role, client: "CalMonkey CLI", connection_id: "mcg_1", access: { live_applications: "none", event_details: true, test_client_secrets: fake.state.secrets && fake.state.role !== "member" }, access_token_expires_at: new Date(Date.now() + 3600_000).toISOString(), dashboard_url: `${fake.url}/dashboard` });
         if (url.pathname === "/mcp/cli/applications" && req.method === "GET") return json(res, 200, { organization: "Acme", your_role: fake.state.role, applications: fake.applications.filter((a) => a.mode === "test"), live_applications_not_included: fake.applications.filter((a) => a.mode === "live").length });
         if (url.pathname === "/mcp/cli/applications" && req.method === "POST") {
           if (fake.state.role === "member") return json(res, 403, { error: { code: "forbidden", message: "Your role in this organization is read-only." } });

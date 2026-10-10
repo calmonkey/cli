@@ -1,6 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { detectAgent, type AgentInfo } from "./agent.js";
+import { runCommand, type Runner } from "./install.js";
 
 // Everything the commands read from the outside world, gathered once so tests can supply
 // their own: where the project is, where the home directory is, the environment, the streams.
@@ -32,6 +33,8 @@ export type Context = {
   /** The public site, where the documentation is: https://calmonkey.com */
   site: string;
   version: string;
+  /** Runs another program (the project's package manager, for `init`). Tests supply their own. */
+  run: Runner;
 };
 
 export const DEFAULT_ENDPOINTS: Endpoints = { app: "https://app.calmonkey.com", api: "https://api.calmonkey.com", mcp: "https://mcp.calmonkey.com/mcp" };
@@ -105,6 +108,7 @@ export function createContext(overrides: Partial<Context> = {}): Context {
     stderr: overrides.stderr ?? process.stderr,
     interactive: overrides.interactive ?? (Boolean(stdin.isTTY) && Boolean(stdout.isTTY) && !isCi(env) && !agent.agent),
     version: overrides.version ?? (typeof __CLI_VERSION__ === "string" ? __CLI_VERSION__ : "0.0.0-dev"),
+    run: overrides.run ?? runCommand,
   };
 }
 

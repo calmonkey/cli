@@ -20,7 +20,7 @@ calmonkey logs requests --errors
 calmonkey docs search webhook signature
 ```
 
-Node 20.12 or later. No install step, nothing to configure, no telemetry, no runtime dependencies.
+Node 20.12 or later. Nothing to configure, no telemetry, no runtime dependencies. In a project with a `package.json`, `init` adds it as a devDependency, so `npx calmonkey` runs the project's own copy.
 
 ## Built for AI coding agents
 
@@ -44,8 +44,9 @@ Run it in your project folder. In order, it:
 1. **Signs you in through the browser.** It opens app.calmonkey.com, where you sign in (or sign up) with Google or Microsoft, pick the organization and press **Connect**. The tool then shows in the dashboard under **AI clients** as "CalMonkey CLI", where it can be disconnected.
 2. **Picks or creates a test-mode application.** It never uses a live application.
 3. **Writes the environment file**: `CALMONKEY_CLIENT_ID`, `CALMONKEY_API_URL`, `CALMONKEY_APP_URL`, `CALMONKEY_TZ` (the time zone dates are read in: your machine's, shown first, or `--tz`) and `CALMONKEY_CLIENT_SECRET` into `.env.local` (or an existing `.env` when the project has no `.env.local`), and makes sure the file is git-ignored.
-4. **Installs the CalMonkey skill** into the project and adds a short marked section to `AGENTS.md` (and to `CLAUDE.md` when the project has one: Claude Code reads `AGENTS.md` only in a project without a `CLAUDE.md`). They tell an AI coding agent to use the `calmonkey` command.
-5. **Prints what to say to your AI assistant.**
+4. **Adds `calmonkey` to `package.json`** as a devDependency at its own version, when the project has a `package.json`, with the project's package manager (npm, pnpm, Yarn or Bun, from the lock file): exactly one package is added and nothing else is changed; a project that already lists it keeps its version. Skip it with `--no-install`; `--dry-run` prints the command. Without a `package.json` this step does not happen.
+5. **Installs the CalMonkey skill** into the project and adds a short marked section to `AGENTS.md` (and to `CLAUDE.md` when the project has one: Claude Code reads `AGENTS.md` only in a project without a `CLAUDE.md`). They tell an AI coding agent to use the `calmonkey` command.
+6. **Prints what to say to your AI assistant.**
 
 With `--mcp` it also registers the MCP server `https://mcp.calmonkey.com/mcp` in the AI coding tools it finds. That is for tools that cannot run a command; an agent with a shell does not need it.
 
@@ -61,6 +62,7 @@ It shows what it will write and asks before writing. It never overwrites: a vari
       --rotate-secret   replace an existing application's client secret without asking
       --tz <zone>       the zone written as CALMONKEY_TZ (default: this machine's)
       --no-skills       skip the skill and AGENTS.md
+      --no-install      do not add calmonkey to package.json
       --mcp             also register the MCP server in the AI tools found
       --client <tool>   with --mcp, only these tools (repeatable): claude-code, cursor, vscode, codex, gemini, windsurf
       --no-browser      print the sign-in address instead of opening a browser
@@ -142,6 +144,21 @@ Registers the MCP server in AI tools: what `init --mcp` adds. For tools that can
 ### `calmonkey login`, `calmonkey logout`
 
 Sign in through the browser; end the connection at CalMonkey and remove the stored sign-in.
+
+## Agents with no browser: `CALMONKEY_TOKEN`
+
+A cloud coding agent or a CI job cannot sign in: nobody is there to press Connect. A person makes it a token instead, in the dashboard under **AI clients**, or in their own terminal while signed in:
+
+```sh
+calmonkey token create --name "Codex cloud"            # shown once
+calmonkey token create --name CI --days 30 --app <client id> --may-write
+calmonkey token list
+calmonkey token revoke <id>
+```
+
+Set it as `CALMONKEY_TOKEN` in the agent's environment (its secret settings, never a file in the repository). Every command then uses it instead of a stored sign-in, and `calmonkey status` says so. The tool reads it from the environment only, never prints it and never writes it to a file.
+
+What such a token can do is fixed by CalMonkey: test-mode applications only, whatever else is ticked, and never a client secret; it expires after 7, 30 or 90 days; it can be limited to one application; it is free/busy only unless `--event-details`, and reads only unless `--may-write`. Nobody is behind it to agree, so a delete or a change that emails guests is refused: that needs a person who is signed in. It acts as the person who made it and stops working when they leave the organization. Owners and admins can make one; `token create` runs only in a person's own terminal, never under an AI agent, so the token never passes through a model.
 
 ## How sign-in works
 

@@ -5,7 +5,7 @@ import type { Context } from "../context.js";
 import { loadSession } from "../credentials.js";
 import { findInEnvFiles } from "../envfile.js";
 import { request } from "../http.js";
-import { NotSignedInError } from "../oauth.js";
+import { MACHINE_TOKEN_REFUSED, NotSignedInError, usesMachineToken } from "../oauth.js";
 import { API_SKILL, skillInstalled } from "../skills.js";
 import type { Ui } from "../ui.js";
 
@@ -61,11 +61,13 @@ export async function runDoctor(ctx: Context, ui: Ui, opts: { envFile?: string }
   }
 
   // The sign-in.
-  if (!loadSession(ctx)) add("warn", "Not signed in", "Run: calmonkey login");
+  const machine = usesMachineToken(ctx);
+  if (!machine && !loadSession(ctx)) add("warn", "Not signed in", "Run: calmonkey login");
   else {
     try {
       const session = await getSession(ctx);
-      add("ok", `Signed in to ${session.organization} as ${session.role}${session.access.test_client_secrets ? "" : " (without client secrets of test applications)"}`);
+      if (session.machine_token) add("ok", `Signed in with the machine token “${session.machine_token.name}” (CALMONKEY_TOKEN) to ${session.organization}, expires ${session.machine_token.expires_at.slice(0, 10)}`);
+      else add("ok", `Signed in to ${session.organization} as ${session.role}${session.access.test_client_secrets ? "" : " (without client secrets of test applications)"}`);
       if (id) {
         const apps = (await listApplications(ctx)).applications;
         const app = apps.find((a) => a.client_id === id.value);
@@ -73,7 +75,7 @@ export async function runDoctor(ctx: Context, ui: Ui, opts: { envFile?: string }
         else add("warn", "CALMONKEY_CLIENT_ID is not one of this organization's test-mode applications", "It may be a live application or belong to another organization. `calmonkey listen` and the MCP tools work on test-mode applications.");
       }
     } catch (error) {
-      if (error instanceof NotSignedInError) add("warn", "The sign-in has run out or was disconnected", "Run: calmonkey login");
+      if (error instanceof NotSignedInError) add("warn", machine ? MACHINE_TOKEN_REFUSED : "The sign-in has run out or was disconnected", machine ? "A person can make a new one in the dashboard (AI clients)." : "Run: calmonkey login");
       else add("fail", `The sign-in could not be checked: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   }
