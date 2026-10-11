@@ -27,7 +27,7 @@ export class ConfirmationNeeded extends Error {
   }
 }
 
-type ErrorBody = { code?: string; message?: string; field?: string; key?: string; applications?: { client_id: string; name: string; mode: string }[]; accounts?: { account_id: string; kind: string }[]; calendars?: { calendar_id: string; provider_name: string; primary: boolean }[]; matches?: string[] };
+type ErrorBody = { code?: string; message?: string; field?: string; key?: string; applications?: { client_id: string; name: string; mode: string }[]; accounts?: { account_id: string; kind: string }[]; calendars?: { calendar_id: string; provider_name: string; primary: boolean }[]; matches?: string[]; upgrade_url?: string };
 
 export type CallOptions = {
   /** The command as it was typed, to print a corrected one. */
@@ -100,6 +100,8 @@ function refusal(status: number, e: ErrorBody, opts: CallOptions, requestId: str
       return new Failure({ ...base, exit, fix: ["ask a person for a token that covers this (dashboard: AI clients)"] });
     case "rate_limited":
       return new Failure({ ...base, exit, fix: ["wait a few seconds and run the same command again"] });
+    case "plan_required":
+      return new Failure({ ...base, exit, fix: [`an owner upgrades to Scale: ${e.upgrade_url ?? "the dashboard, Billing"}`] });
     case "invalid_event":
     case "invalid_arguments":
     case "invalid":

@@ -25,5 +25,7 @@ export const CLI_CODES: Record<string, { means: string; fix: string }> = {
   invalid_file: { means: "--from-file must be one JSON object whose keys are an event's own fields, at most 256 KB. Its content is never shown.", fix: "`calmonkey events get <id> --as-put` prints a body of the right shape." },
   unknown_command: { means: "No such command.", fix: "`calmonkey --help` lists them all on one screen." },
   unknown_flag: { means: "The command has no such flag.", fix: "`calmonkey <command> --help` lists its flags with examples." },
+  plan_required: { means: "Your own brand on Google's and Microsoft's sign-in screens is included in the Scale plan, and this organisation is on another plan.", fix: "An owner upgrades in the dashboard (Billing); the error names the address. Then run the command again." },
+  invalid_domain: { means: "A connect domain is a host name you own, such as calendar.yourcompany.com: no https://, path or port.", fix: "`calmonkey brand domain set calendar.yourcompany.com`." },
   rate_limited: { means: "Too many calls in a short time from this sign-in.", fix: "Wait the seconds named and run the same command again." },
 };

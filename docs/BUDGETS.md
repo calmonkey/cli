@@ -4,7 +4,7 @@ Written by `test/budgets.test.ts` on every run: tiktoken `o200k_base`, on the fi
 
 | Output | Budget (tokens) | Measured |
 |---|---|---|
-| Root `--help` | 400 | 348 |
+| Root `--help` | 400 | 375 |
 | One command's `--help` (largest) | 400 | 400 (`events list`) |
 | `agent-guide` | 450 | 432 |
 | `schema <command>` (largest) | 600 | 412 (`upsertEvent`) |
@@ -18,4 +18,4 @@ Written by `test/budgets.test.ts` on every run: tiktoken `o200k_base`, on the fi
 | `explain <code>` (largest) | 120 | 96 (`config_not_writable`) |
 | Confirmation block | 150 | 148 |
 | AGENTS.md section | 200 | 196 |
-| SKILL.md body | 1,500 | 1176 |
+| SKILL.md body | 1,500 | 1268 |

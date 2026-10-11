@@ -160,6 +160,22 @@ Set it as `CALMONKEY_TOKEN` in the agent's environment (its secret settings, nev
 
 What such a token can do is fixed by CalMonkey: test-mode applications only, whatever else is ticked, and never a client secret; it expires after 7, 30 or 90 days; it can be limited to one application; it is free/busy only unless `--event-details`, and reads only unless `--may-write`. Nobody is behind it to agree, so a delete or a change that emails guests is refused: that needs a person who is signed in. It acts as the person who made it and stops working when they leave the organization. Owners and admins can make one; `token create` runs only in a person's own terminal, never under an AI agent, so the token never passes through a model.
 
+## Your own brand on the sign-in screen: `calmonkey brand`
+
+On the Scale plan, Google's and Microsoft's sign-in screens can name your app instead of CalMonkey's, on a connect address of your own. The dashboard's **Own brand** tab walks through it; these commands do the same steps from the terminal, for an owner or admin who is signed in (not with `CALMONKEY_TOKEN`):
+
+```sh
+calmonkey brand status                              # where the set-up stands, and what is next
+calmonkey brand domain set calendar.yourcompany.com # prints the DNS records to add
+calmonkey brand domain verify
+calmonkey brand google upload client_secret_….json  # the secret is sent, never printed
+calmonkey brand check                               # the pre-flight: each failure with its fix
+calmonkey brand kit                                 # wording and shot list for Google's review
+calmonkey brand switch own                          # described first; --confirm after you agree
+```
+
+A live application is reached only when the sign-in included live applications (chosen on the approval page of `calmonkey login`). Google shows your app's name and logo once it has reviewed your brand; until then it shows your web address. Switching changes only new connections: people already connected keep working. Details: https://calmonkey.com/docs/own-brand
+
 ## How sign-in works
 
 The tool is a public OAuth client: authorization code flow with PKCE (S256), the answer delivered to a port on `127.0.0.1` that exists for the length of the sign-in. It identifies itself with a client metadata document that CalMonkey publishes for it. No secret exists, and none is put in an address or on the command line.

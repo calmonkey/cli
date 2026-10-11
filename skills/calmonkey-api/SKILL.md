@@ -25,6 +25,7 @@ Use the `calmonkey` command line tool (`npx calmonkey` when it is not installed)
 - **A call failed**: `calmonkey logs requests --errors`, then `calmonkey explain <code>`.
 - **What no command covers**: `calmonkey api <METHOD> <path>` sends one raw request with the project's own credentials.
 - **Moving an existing calendar integration over**: the skill `calmonkey-migration`.
+- **Own brand on the sign-in screen** (Scale plan; an owner or admin, signed in as a person): `calmonkey brand status` says where the set-up stands and what is next; `brand domain set <host>`, `brand google upload <file>`, `brand check`, `brand kit`; `brand switch own` is described first. [references/cli.md](references/cli.md#own-brand-command-line).
 
 ## Rules that are easy to get wrong
 

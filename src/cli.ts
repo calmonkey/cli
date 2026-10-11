@@ -1,6 +1,7 @@
 import { CLIENT_IDS } from "./clients/index.js";
 import { ACCOUNT_COMMANDS } from "./commands/account.js";
 import { API_COMMANDS } from "./commands/api.js";
+import { BRAND_COMMANDS } from "./commands/brand.js";
 import { runDoctor } from "./commands/doctor.js";
 import { EVENT_COMMANDS } from "./commands/events.js";
 import { FREEBUSY_COMMANDS } from "./commands/freebusy.js";
@@ -152,7 +153,7 @@ const SETUP_COMMANDS: Command[] = [
   },
 ];
 
-export const COMMANDS: Command[] = [...SETUP_COMMANDS, ...ACCOUNT_COMMANDS, ...EVENT_COMMANDS, ...FREEBUSY_COMMANDS, ...LOG_COMMANDS, ...LEARN_COMMANDS, ...SKILL_COMMANDS, ...TOKEN_COMMANDS, ...API_COMMANDS];
+export const COMMANDS: Command[] = [...SETUP_COMMANDS, ...ACCOUNT_COMMANDS, ...EVENT_COMMANDS, ...FREEBUSY_COMMANDS, ...LOG_COMMANDS, ...LEARN_COMMANDS, ...SKILL_COMMANDS, ...TOKEN_COMMANDS, ...BRAND_COMMANDS, ...API_COMMANDS];
 setRegistry(() => COMMANDS);
 
 /** Other spellings people and agents reach for, where taking them does no harm. */
@@ -215,7 +216,8 @@ Learn
   schema <command>     the API call behind a command: fields, types, limits
   explain <code>       what an error code means, and the fix
 Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout,
-  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser)
+  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser),
+  brand status | domain set | domain verify | google upload | check | switch | kit (own brand on the sign-in screen)
 
 Every command: --help (with examples), --json, --limit N; lists: --fields a,b; writes: --dry-run.
 Times need a zone: --tz Australia/Melbourne, or CALMONKEY_TZ in the env file.
@@ -225,14 +227,14 @@ Output is capped. When there is more, the last line is the command that gets it.
 
 const NAMES = () => COMMANDS.map((c) => c.name);
 
-/** The command a line names: its words, and what is left. */
+/** The command a line names: its words, and what is left. Names have up to three words ("brand domain set"). */
 function resolve(argv: string[]): { spec: Command; rest: string[] } | Failure {
   const words: string[] = [];
   for (const token of argv) {
-    if (token.startsWith("-") || words.length === 2) break;
+    if (token.startsWith("-") || words.length === 3) break;
     words.push(token);
   }
-  for (const n of [2, 1]) {
+  for (const n of [3, 2, 1]) {
     if (words.length < n) continue;
     const typed = words.slice(0, n).join(" ");
     const taught = teach(typed);
@@ -241,11 +243,17 @@ function resolve(argv: string[]): { spec: Command; rest: string[] } | Failure {
     const spec = COMMANDS.find((c) => c.name === name);
     if (spec) return { spec, rest: argv.slice(n) };
   }
-  // A group named without its verb ("events", "logs"): say which verbs it has.
-  const group = COMMANDS.filter((c) => c.name.startsWith(`${words[0]} `));
-  if (group.length) {
-    const guess = words[1] ? nearest(words[1], group.map((c) => c.name.split(" ")[1]!)) : null;
-    return new Failure({ code: "unknown_command", message: words[1] ? `no command "${words.slice(0, 2).join(" ").slice(0, 60)}"${guess ? `. Did you mean: calmonkey ${words[0]} ${guess}` : ""}` : `"${words[0]}" needs a verb: ${group.map((c) => c.name.split(" ")[1]).join(", ")}`, exit: EXIT.usage, fix: [`calmonkey ${guess ? `${words[0]} ${guess}` : group[0]!.name} --help`] });
+  // A group named without its verb ("events", "logs", "brand domain"): say which verbs it has.
+  for (const n of [2, 1]) {
+    if (words.length < n) continue;
+    const prefix = words.slice(0, n).join(" ");
+    const group = COMMANDS.filter((c) => c.name.startsWith(`${prefix} `));
+    if (!group.length) continue;
+    const verbs = [...new Set(group.map((c) => c.name.slice(prefix.length + 1).split(" ")[0]!))];
+    const next = words[n];
+    const guess = next ? nearest(next, verbs) : null;
+    const meant = guess ? (group.find((c) => c.name === `${prefix} ${guess}`)?.name ?? group.find((c) => c.name.startsWith(`${prefix} ${guess} `))?.name ?? `${prefix} ${guess}`) : null;
+    return new Failure({ code: "unknown_command", message: next ? `no command "${words.slice(0, n + 1).join(" ").slice(0, 60)}"${meant ? `. Did you mean: calmonkey ${meant}` : ""}` : `"${prefix}" needs a verb: ${verbs.join(", ")}`, exit: EXIT.usage, fix: [`calmonkey ${meant ?? group[0]!.name} --help`] });
   }
   const typed = words.join(" ");
   const guess = nearest(typed, [...NAMES(), ...Object.keys(ALIASES)]) ?? nearest(words[0] ?? "", [...new Set(NAMES().map((n) => n.split(" ")[0]!))]);
@@ -284,10 +292,13 @@ export async function main(argv: string[], ctx: Context = createContext()): Prom
       return argv.length ? EXIT.ok : EXIT.usage;
     }
     // `calmonkey events --help`: the verbs of a group, one line each.
-    const group = COMMANDS.filter((c) => c.name.startsWith(`${argv[0]} `));
-    if (group.length && (argv[1] === undefined || argv[1].startsWith("-")) && (argv.includes("--help") || argv.includes("-h"))) {
+    // `calmonkey brand domain --help` too: the words typed before the first flag name the group.
+    const lead = argv.slice(0, argv.findIndex((a) => a.startsWith("-")) === -1 ? argv.length : argv.findIndex((a) => a.startsWith("-")));
+    const named = lead.join(" ");
+    const group = COMMANDS.filter((c) => c.name.startsWith(`${named} `));
+    if (lead.length && group.length && !COMMANDS.some((c) => c.name === named) && (argv.includes("--help") || argv.includes("-h"))) {
       const width = Math.max(...group.map((c) => c.name.length));
-      ctx.stdout.write(`calmonkey ${argv[0]} <verb> [flags]\n\n${group.map((c) => `  calmonkey ${c.name.padEnd(width)}  ${c.summary.split(/[.:;(]/)[0]!.trim()}`).join("\n")}\n\nEach verb's flags and examples: calmonkey ${argv[0]} <verb> --help\n`);
+      ctx.stdout.write(`calmonkey ${named} <verb> [flags]\n\n${group.map((c) => `  calmonkey ${c.name.padEnd(width)}  ${c.summary.split(/[.:;(]/)[0]!.trim()}`).join("\n")}\n\nEach verb's flags and examples: calmonkey ${named} <verb> --help\n`);
       return EXIT.ok;
     }
     const found = resolve(argv);

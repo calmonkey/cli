@@ -2,7 +2,7 @@
 
 `calmonkey` is the calendar API from a terminal: read events and free/busy, write and change events, see what the API received and what it sent to your webhook, and look things up in these docs. It is built for AI coding agents as much as for people: answers are short, an error carries the command that fixes it, and anything that deletes or emails is confirmed first.
 
-> Made from the CalMonkey documentation (https://calmonkey.com/docs/cli.md). Changes go to the documentation, not to this file.
+> Made from the CalMonkey documentation (https://calmonkey.com/docs/cli.md, https://calmonkey.com/docs/own-brand.md). Changes go to the documentation, not to this file.
 
 ## Contents
 
@@ -16,6 +16,7 @@
 - [For AI coding agents](#cli-agents)
 - [Without a browser: CALMONKEY_TOKEN](#cli-token)
 - [Every command](#cli-commands)
+- [Own brand from the terminal](#own-brand-command-line)
 
 <a id="cli-start"></a>
 
@@ -53,7 +54,8 @@ Learn
   schema <command>     the API call behind a command: fields, types, limits
   explain <code>       what an error code means, and the fix
 Other: apps list | create, api <METHOD> <path>, skill install | print | status, mcp add, login, logout,
-  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser)
+  token create | list | revoke (CALMONKEY_TOKEN, for agents with no browser),
+  brand status | domain set | domain verify | google upload | check | switch | kit (own brand on the sign-in screen)
 
 Every command: --help (with examples), --json, --limit N; lists: --fields a,b; writes: --dry-run.
 Times need a zone: --tz Australia/Melbourne, or CALMONKEY_TZ in the env file.
@@ -829,6 +831,104 @@ See also: calmonkey token list
 ```
 
 ```
+calmonkey brand status [flags]
+Your own brand on Google's and Microsoft's sign-in screens (Scale plan): where the set-up of an application stands, and what to do next. Owners and admins
+
+  --app <id|name>  the application (default: the organisation's only one)
+  --json           one line of JSON instead of text
+
+Examples
+  calmonkey brand status
+  calmonkey brand status --app "Shop"
+
+See also: calmonkey brand check, https://calmonkey.com/docs/own-brand
+```
+
+```
+calmonkey brand domain set <host> [flags]
+Choose the connect domain people sign in on (a subdomain you own, e.g. calendar.yourcompany.com) and print the DNS records to add, also as a zone file
+
+  --app <id|name>    the application (default: the organisation's only one)
+  --confirm <token>  the token a held command printed, once the person agreed
+  --json             one line of JSON instead of text
+
+Examples
+  calmonkey brand domain set calendar.yourcompany.com
+
+See also: calmonkey brand domain verify
+```
+
+```
+calmonkey brand domain verify [flags]
+Check the connect domain's DNS records and verify it. Exit code 1 while a record is missing
+
+  --app <id|name>  the application (default: the organisation's only one)
+  --json           one line of JSON instead of text
+
+Examples
+  calmonkey brand domain verify
+
+See also: calmonkey brand domain set <host>, calmonkey brand status
+```
+
+```
+calmonkey brand google upload <client.json> [flags]
+Send your Google OAuth client file (the Web application client's JSON) to CalMonkey. Stored encrypted, checked with Google, never shown again; the secret is never printed
+
+  --app <id|name>    the application (default: the organisation's only one)
+  --confirm <token>  the token a held command printed, once the person agreed
+  --json             one line of JSON instead of text
+
+Examples
+  calmonkey brand google upload ~/Downloads/client_secret_1069….json
+
+See also: calmonkey brand check
+```
+
+```
+calmonkey brand check [flags]
+Run the pre-flight: your settings and clients, and your home page and privacy policy as Google's reviewers see them. Failures first, each with its fix; exit code 1 while one fails
+
+  --app <id|name>  the application (default: the organisation's only one)
+  --json           one line of JSON instead of text
+
+Examples
+  calmonkey brand check
+
+See also: calmonkey brand kit, calmonkey brand status
+```
+
+```
+calmonkey brand switch own|shared [flags]
+Choose which app NEW connections sign in with: your own, or CalMonkey's shared one. Always described first; people already connected keep working either way
+
+  --app <id|name>    the application (default: the organisation's only one)
+  --confirm <token>  the token a held command printed, once the person agreed
+  --json             one line of JSON instead of text
+
+Examples
+  calmonkey brand switch own
+  calmonkey brand switch own --confirm cmmcf_…   (after the person agreed)
+  calmonkey brand switch shared
+
+See also: calmonkey brand status
+```
+
+```
+calmonkey brand kit [flags]
+Print the verification kit: why the app needs each permission, wording for your privacy policy and home page, and the shot list for the demo video Google asks for
+
+  --app <id|name>  the application (default: the organisation's only one)
+  --json           one line of JSON instead of text
+
+Examples
+  calmonkey brand kit
+  calmonkey brand kit > kit.md
+
+See also: calmonkey brand check
+```
+
+```
 calmonkey api <METHOD> <path> [flags]
 One raw API request for what no command covers, sent with the project's own credentials as an application calendar (the secret and tokens are never shown). A DELETE or a body that invites guests is described first (tool api_check, then the request itself)
 
@@ -847,4 +947,20 @@ Examples
   calmonkey api POST /v1/channels --from-file channel.json
 
 See also: calmonkey schema <operationId> (fields of a call), calmonkey schema (every operation)
+```
+
+<a id="own-brand-command-line"></a>
+
+## Own brand from the terminal
+
+The command line tool does the same steps, for an owner or admin signed in with `calmonkey login` (a machine token cannot). A live application is reached only when the sign-in included live applications. `calmonkey brand switch` is always described first and is done only after you agree.
+
+```sh
+calmonkey brand status                               # where the set-up stands, and what is next
+calmonkey brand domain set calendar.yourcompany.com  # the DNS records to add
+calmonkey brand domain verify
+calmonkey brand google upload client_secret.json     # the secret is sent, never printed
+calmonkey brand check                                # the pre-flight checks, each failure with its fix
+calmonkey brand kit                                  # the verification kit
+calmonkey brand switch own                           # described first; done once you agree
 ```
