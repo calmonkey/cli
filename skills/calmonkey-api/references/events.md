@@ -187,6 +187,8 @@ Request body
 
 `202 Accepted`, empty body. Fields the API does not have (reminders, for example) are accepted and ignored. `404` for a calendar the account does not have, `403` for a read-only one, `422` for an invalid body or for something the calendar cannot do ([the keys](#api-event-errors)).
 
+**Waiting for the calendar.** With the header `Prefer: respond-sync` the request waits, up to 10 seconds, until the write is in the calendar itself. It answers `200 OK` with an empty body once it is there, and `422` with `errors.calendar_refused` when the calendar refused it for good: on the field it is about, or on `base`, with the calendar’s reason as the description. Both carry `Preference-Applied: respond-sync`. After a refusal the calendar does not have the write: change it and send it again, or delete the event. When the write cannot be finished in time (the calendar is slow or asks to try later, or the account must be connected again), the answer is the usual `202` without `Preference-Applied`, and the write follows as it does without the header. `Prefer: respond-sync, wait=3` waits 3 seconds at most. An application calendar is written inside the request, so with the header it always answers `200`.
+
 <a id="api-guests"></a>
 
 ## Guests
@@ -385,6 +387,8 @@ Delete an event and send no cancellations
 
 `202 Accepted`, empty body, also when there is no such event. Without `occurrence_date` a repeating event is deleted with all its occurrences. With it, `422` on `occurrence_date` when the event does not repeat (`errors.not_recurring`) or has no occurrence on that day (`errors.not_an_occurrence`); skipping a day that is already skipped is fine.
 
+`Prefer: respond-sync` waits for the calendar as it does for [an upsert](#api-events-upsert): `200` once the event (or the occurrence) is gone from the calendar, also when there was no such event, and `422` with `errors.calendar_refused` when the calendar refused the delete.
+
 <a id="api-events-occurrences"></a>
 
 ## POST /v1/calendars/{calendar_id}/events/occurrences
@@ -451,5 +455,6 @@ Event writes answer `422` in the usual shape ([field errors](errors.md#errors-va
 | `errors.invalid` | `recurrence.…, tzid` | The rule does not fit the event: the start is not an occurrence of it (`…by_day`), `by_day` is wrong for the frequency, a monthly series starts on the 29th to 31st or a yearly one on 29 February (`…frequency`), `until` is before the start, a timed series has no `tzid`, or an exception’s `date` is not a date or is named twice. The description says which. |
 | `errors.not_recurring` | `occurrence_date` | The event does not repeat. |
 | `errors.not_an_occurrence` | `occurrence_date` | The series has no occurrence on that day. |
+| `errors.calendar_refused` | `base, or the field` | Only with `Prefer: respond-sync`: the calendar refused the write for good. The description gives its reason. |
 
 The body is checked first and the calendar second: a body with a mistake in it answers with the mistake, and a well-formed body the calendar cannot carry out answers with the calendar’s key. Nothing is written in either case.

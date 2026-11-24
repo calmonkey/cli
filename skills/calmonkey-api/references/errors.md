@@ -185,6 +185,7 @@ Event writes answer `422` in the usual shape ([field errors](#errors-validation)
 | `errors.invalid` | `recurrence.…, tzid` | The rule does not fit the event: the start is not an occurrence of it (`…by_day`), `by_day` is wrong for the frequency, a monthly series starts on the 29th to 31st or a yearly one on 29 February (`…frequency`), `until` is before the start, a timed series has no `tzid`, or an exception’s `date` is not a date or is named twice. The description says which. |
 | `errors.not_recurring` | `occurrence_date` | The event does not repeat. |
 | `errors.not_an_occurrence` | `occurrence_date` | The series has no occurrence on that day. |
+| `errors.calendar_refused` | `base, or the field` | Only with `Prefer: respond-sync`: the calendar refused the write for good. The description gives its reason. |
 
 The body is checked first and the calendar second: a body with a mistake in it answers with the mistake, and a well-formed body the calendar cannot carry out answers with the calendar’s key. Nothing is written in either case.
 
@@ -218,5 +219,6 @@ Each key a `422` can carry, with the section above that says what it means. Matc
 - `errors.not_supported_count_until_combination`: [422 keys of event writes](#api-event-errors)
 - `errors.not_recurring`: [422 keys of event writes](#api-event-errors)
 - `errors.not_an_occurrence`: [422: field errors](#errors-validation), [422 keys of event writes](#api-event-errors)
+- `errors.calendar_refused`: [422 keys of event writes](#api-event-errors)
 
 Applications in compatibility mode get these keys in place of some of the above: `errors.tzid_unrecognized`, `errors.invalid_time_pair`, `errors.event.cannot_set_attendees`, `errors.integrated_conferencing_not_available`. See https://calmonkey.com/docs/compatibility.md.

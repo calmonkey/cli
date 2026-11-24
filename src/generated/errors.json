@@ -5,6 +5,12 @@
    "means": "Guests were added on a calendar that sends no invitations (provider table). On an application calendar, send `notify_attendees: false` to store them without telling anybody."
   }
  ],
+ "calendar_refused": [
+  {
+   "on": "base, or the field",
+   "means": "Only with `Prefer: respond-sync`: the calendar refused the write for good. The description gives its reason."
+  }
+ ],
  "conferencing_unavailable": [
   {
    "on": "conferencing.profile_id",
@@ -117,6 +123,12 @@
   {
    "on": "…until",
    "means": "`count` and `until` together."
+  }
+ ],
+ "notify_attendees_cannot_change": [
+  {
+   "on": "notify_attendees",
+   "means": "A `notify_attendees` that is the opposite of how the event was first given guests, on an iCloud calendar. Leave it out, or delete the event and create it again."
   }
  ],
  "notify_attendees_unsupported": [

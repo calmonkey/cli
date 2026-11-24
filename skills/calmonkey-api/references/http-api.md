@@ -147,6 +147,7 @@ The same four calls as programs that check each answer: `scripts/quickstart.sh` 
 | `GET /v1/account` | [connect-and-tokens.md](connect-and-tokens.md#api-account) |
 | `GET /v1/userinfo` | [connect-and-tokens.md](connect-and-tokens.md#api-userinfo) |
 | `GET /v1/profiles` | [connect-and-tokens.md](connect-and-tokens.md#api-profiles) |
+| `POST /v1/profiles/{profile_id}/revoke` | [connect-and-tokens.md](connect-and-tokens.md#api-profiles-revoke) |
 | `GET /v1/calendars` | [connect-and-tokens.md](connect-and-tokens.md#api-calendars) |
 | `GET /v1/free_busy` | [free-busy.md](free-busy.md#api-free-busy) |
 | `GET /v1/events` | [events.md](events.md#api-events-read) |

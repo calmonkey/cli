@@ -613,7 +613,7 @@ describe("learning without a sign-in", () => {
     const out = sandbox({ url: fake.url });
     expect(await main(["schema", "events", "put"], out.ctx)).toBe(0);
     expect(out.out()).toContain("calmonkey events put = POST /v1/calendars/{calendar_id}/events (upsertEvent): Create or replace an event");
-    for (const field of ["event_id*", "summary*", "start*", "attendees", "recurrence", "conferencing", "answers: 202, 401, 403, 404, 422", "calmonkey docs get api#events-upsert"]) expect(out.out()).toContain(field);
+    for (const field of ["event_id*", "summary*", "start*", "attendees", "recurrence", "conferencing", "answers: 200, 202, 401, 403, 404, 422", "calmonkey docs get api#events-upsert"]) expect(out.out()).toContain(field);
     expect(await main(["schema", "createChannel"], out.ctx)).toBe(0);
     expect(await main(["schema"], out.ctx)).toBe(0);
     expect(out.out()).toContain("listEvents");

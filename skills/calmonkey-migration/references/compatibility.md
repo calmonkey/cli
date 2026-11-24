@@ -17,12 +17,12 @@ These endpoints have the paths, parameters, response fields, status codes and er
 - `GET /v1/account`
 - `GET /v1/userinfo`
 - `GET /v1/profiles`
+- `POST /v1/profiles/{id}/revoke`
 - `GET /v1/calendars`
 - `GET /v1/free_busy`
 - `GET /v1/events`
 - `POST /v1/calendars/{id}/events`
 - `DELETE /v1/calendars/{id}/events`
-- `POST /v1/calendars/{id}/events/occurrences`
 - `POST /v1/channels`
 - `GET /v1/channels`
 - `DELETE /v1/channels/{id}`
@@ -44,7 +44,7 @@ Event writes and reads take these fields and return these shapes:
 
 ### Outside the compatible set
 
-These have no counterpart on this API: availability-search and scheduling products, `conferencing.profile_id: "explicit"` with a join URL of your own, changing a participation status through the API, on-premises Exchange, and per-profile revoke (`POST /v1/profiles/{id}/revoke`). Revoke the whole grant with `/oauth/token/revoke` instead.
+These have no counterpart on this API: availability-search and scheduling products, `conferencing.profile_id: "explicit"` with a join URL of your own, changing a participation status through the API, and on-premises Exchange.
 
 <a id="compatibility-mode"></a>
 

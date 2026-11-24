@@ -13,6 +13,7 @@ Sending a person to connect a calendar, exchanging the code, refreshing and revo
 - [GET /v1/account](#api-account)
 - [GET /v1/userinfo](#api-userinfo)
 - [GET /v1/profiles](#api-profiles)
+- [POST /v1/profiles/{profile_id}/revoke](#api-profiles-revoke)
 - [GET /v1/calendars](#api-calendars)
 
 <a id="api-authorize"></a>
@@ -231,7 +232,7 @@ For an application calendar, `application_calendar_id` takes the place of `email
       "profile_id": "pro_7782a96ff1609061631ebc5b",
       "profile_name": "dana@contoso.example",
       "profile_connected": false,
-      "profile_relink_url": null,
+      "profile_relink_url": "https://app.calmonkey.com/connect/relink?token=pro_7782a96ff1609061631ebc5b.1795132800.q3Rk8vNwX1bYz0Lm5PcT7aHs2JdUe9FgKi4Bo6Wn_Qx",
       "profile_initial_sync_required": false,
       "profile_calendars": [
         {
@@ -250,10 +251,24 @@ For an application calendar, `application_calendar_id` takes the place of `email
 }
 ```
 
-- `profile_connected: false` means the person has to connect that calendar account again (the provider refused our access, or the password was revoked). Send them through `/oauth/authorize` with the same `provider_name`: the same profile, calendars and account come back.
+- `profile_connected: false` means the person has to connect that calendar account again (the provider refused our access, or the password was revoked). Send them to `profile_relink_url`, or through `/oauth/authorize` with the same `provider_name`: the same profile, calendars and account come back.
 - `provider_service`: `gmail`, `gsuite`, `office365`, `outlook_com`, `icloud`, or `calmonkey` for an application calendar.
-- `profile_relink_url` is `null`: a profile is reconnected through `/oauth/authorize`, as above.
+- `profile_relink_url`: while `profile_connected` is `false`, a link for the person, for example in an email. It opens the provider’s sign-in for that calendar account (for iCloud, the app-specific password form), accepts only the same account, and ends on a page that says the calendar is connected again: nothing comes back to your redirect URI, because the account and your tokens stay as they were. Each read gives a new link, valid for 7 days and until the calendar is connected again. `null` while the profile is connected.
 - `profile_initial_sync_required` is true until the profile’s first sync has finished.
+
+<a id="api-profiles-revoke"></a>
+
+## POST /v1/profiles/{profile_id}/revoke
+
+**POST** `https://api.calmonkey.com/v1/profiles/{profile_id}/revoke`
+
+**Authentication:** `Authorization: Bearer <access_token>`
+
+Disconnects one calendar account of the account: `202`, empty body. Its calendars and their cached events leave the account at once, and the provider’s permission is withdrawn shortly after. The account, its tokens, its channels and its other calendar accounts stay. To end everything, use [/oauth/token/revoke](#api-revoke).
+
+- `404` for a `profile_id` this account does not have, or one already disconnected.
+- `422` with `errors.not_supported` on `profile_id` for an application calendar: revoke its token instead, which deletes the application calendar.
+- Events your application wrote stay in the person’s calendar; delete them first if they should go.
 
 <a id="api-calendars"></a>
 

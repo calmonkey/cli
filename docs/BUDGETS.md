@@ -7,7 +7,7 @@ Written by `test/budgets.test.ts` on every run: tiktoken `o200k_base`, on the fi
 | Root `--help` | 400 | 375 |
 | One command's `--help` (largest) | 400 | 400 (`events list`) |
 | `agent-guide` | 450 | 432 |
-| `schema <command>` (largest) | 600 | 412 (`upsertEvent`) |
+| `schema <command>` (largest) | 600 | 415 (`upsertEvent`) |
 | List, default (20 rows) | 900 | 786 |
 | The same list with `--json` | 6,000 | 1402 |
 | `events get`, default | 500 | 296; 354 with a 500-character description |
