@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { detectAgent } from "../src/agent.js";
 import { COMMANDS, main } from "../src/cli.js";
 import { commandHelp } from "../src/command.js";
@@ -485,6 +485,11 @@ describe("free/busy", () => {
   });
 
   it("--free works out the slots everyone has, inside the hours asked for, and names the first", async () => {
+    // Slots already past are left out, so the clock must stand before the fixture's dates.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-11T12:00:00Z") });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     tools({
       read_free_busy: (a) =>
         ok(
